@@ -42,9 +42,6 @@ class DecoderRNN(nn.Module):
         self.embedding = nn.Embedding(vocab_size, embed_size)
         self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, 
                         dropout=dropout, batch_first=True)
-
-
-
         #define fully connected Layer
         self.fc =nn.Linear(hidden_size,vocab_size)
     
@@ -68,13 +65,20 @@ class DecoderRNN(nn.Module):
         #output = output.view(output.size()[0]*output.size()[1], self.hidden_dim)
         output = self.fc(lstm_out)
        
-        # get last batch
-        #output = output[:, -1]
-
         # return one batch of output word scores and the hidden state
         return output
     
 
     def sample(self, inputs, states=None, max_len=20):
         " accepts pre-processed image tensor (inputs) and returns predicted sentence (list of tensor ids of length max_len) "
-        pass
+        mysoftmax=nn.Softmax(dim=2)
+
+        output_List = []
+        for i in range(max_len):
+            lstm_outputs, states = self.lstm(inputs, states)
+            scores = self.fc(lstm_outputs)
+            result=mysoftmax(scores)
+            prob, word = result.max(2)
+            output_List.append(word.item())
+            inputs = self.embedding(word)
+        return output_List
